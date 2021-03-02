@@ -14,9 +14,12 @@ type DB struct {
 	Db	*sql.DB
 }
 
+const password = "INdu6990&!"
+const user = "rthms"
 
 func Db() *DB{
-	db, err := sql.Open("mysql", "rthms:INdu6990&!@tcp(198.71.225.63:3306)/RTHMS")
+	data := fmt.Sprintf("%v:%v@tcp(198.71.225.63:3306)/RTHMS", user,password)
+	db, err := sql.Open("mysql", data)
 
 	// if there is an error opening the connection, handle it
 	if err != nil {
