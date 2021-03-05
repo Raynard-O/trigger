@@ -53,11 +53,26 @@ type Tag struct {
 	Processed sql.NullBool `json:"processed"`
 }
 
+
+type TagOld struct {
+	ID   int    `json:"id"`
+
+	SampleID	int `json:"sample_id"`
+
+}
+
 //DBQuery
 // enter table and close value for query
 func (d *DB) DBQuery(table, row string)  {
 	///results, err := db.Query("SELECT id, name FROM tags")
-	query := fmt.Sprintf("SELECT %v, sample_id, x,y,z, processed FROM %v", row, table)
+	query := fmt.Sprintf("SELECT %v, sample_id, x,y,z FROM %v", row, table)
+
+
+	/// if id  is lesser than oldID dont do anything
+	//else continue the process
+	//fmt.Sprintf("SELECT @last_id := MAX(id) FROM table; SELECT * FROM table WHERE id = @last_id;")
+
+
 	results, err := d.Db.Query(query)
 
 	if err != nil {
@@ -70,11 +85,23 @@ func (d *DB) DBQuery(table, row string)  {
 	 valuesX,valuesY,valuesZ := []int{},[]int{},[]int{}
 
 
+	f := fmt.Sprintf("SELECT sample_id FROM timitest ORDER BY id DESC LIMIT 1")
+	var tg Tag
+	_= d.Db.QueryRow(f).Scan(&tg.SampleID)
+	fmt.Printf("the last  processed sample id: %v\n", tg.SampleID)
+	//r.NextResultSet()
+
 	for results.Next() {
+		//for i := 0; i < 1; i++ {
+		//
+
 		var tag Tag
 		// for each row, scan the result into our tag composite object
-		err = results.Scan(&tag.ID, &tag.SampleID, &tag.x, &tag.y, &tag.z, &tag.Processed)
-		if tag.Processed.Bool {
+		err = results.Scan(&tag.ID, &tag.SampleID, &tag.x, &tag.y, &tag.z)
+		//if tag.Processed.Bool {
+		//	fmt.Println(tag.SampleID)
+		if tg.SampleID < tag.SampleID {
+			fmt.Println("hello")
 
 			if err != nil {
 				panic(err.Error()) // proper error handling instead of panic in your app
@@ -98,6 +125,7 @@ func (d *DB) DBQuery(table, row string)  {
 				var difff1 int
 				for _, v := range valuesX {
 					diff := v - changeX
+					//fmt.Printf("diff: %v,,,,,,, Value : %v,,,,,, changeX: %v \n", diff, v, changeX)
 					diff2 := diff * diff
 					difff1 += diff2
 					//neWvaluesX = append(neWvaluesX, diff2)
@@ -120,39 +148,40 @@ func (d *DB) DBQuery(table, row string)  {
 				varianceX := difff3 / num
 				varianceY := difff2 / num
 				varianceZ := difff1 / num
+
 				sDX := math.Sqrt(float64(varianceX))
 				sDY := math.Sqrt(float64(varianceY))
 				sDZ := math.Sqrt(float64(varianceZ))
-				fmt.Println(varianceX, varianceY, varianceZ, sDX, sDY, sDZ)
+				//fmt.Printf("diff: %v,,,,,,, Value : %v,,,,,, changeX: %v standare : %v\n", difff3, num, varianceX,sDX)
+				//fmt.Println(varianceX, varianceY, varianceZ, sDX, sDY, sDZ)
 				newX := changeX / num
 				newY := changeY / num
 				newZ := changeZ / num
 
 				//fmt.Printf("newX %v,newY %v, newZ %v,changeX : %v, changeY : %v, changeZ : %v, num : %v\n", newX, newY, newZ, changeX,changeY,changeZ,  num)
-				num = 0
-				changeX, changeY, changeZ = 0, 0, 0
-				tableRow := fmt.Sprintf("INSERT INTO operation_statistics (id, sample_id, x_mean, y_mean, z_mean) \nVALUES (%v,%v,%v,%v,%v)", last_id, tag.SampleID, newX, newY, newZ)
 
-				tableRow2 := fmt.Sprintf("INSERT INTO pytest (processed) \nVALUES (%v)", true)
+				tableRow := fmt.Sprintf("INSERT INTO timitest (id, sample_id, x_mean,x_stdev, x_ms_ratio, y_mean,y_stdev, y_ms_ratio, z_mean, z_stdev, z_ms_ratio ) \nVALUES (%v,%v,%v,%v,%v,%v,%v,%v,%v, %v,%v)", tag.ID, tag.SampleID, newX, sDX, varianceX, newY, sDY, varianceY, newZ, sDZ, varianceZ)
+
+				//tableRow2 := fmt.Sprintf("INSERT INTO pytest (processed) \nVALUES (%v)", true)
 
 				var wg sync.WaitGroup
-				wg.Add(2)
+				wg.Add(1)
 
 				go func() {
 					defer wg.Done()
 					d.Insert(tableRow)
 				}()
-				go func() {
-					defer wg.Done()
-					d.Insert(tableRow2)
-				}()
+
 
 				wg.Wait()
+				num = 0
+				changeX, changeY, changeZ = 0, 0, 0
 			}
 			//("INSERT INTO test VALUES ( 2, 'TEST' )")
 			last_id = tag.SampleID
 		}
 	}
+	//}
 }
 
 //"INSERT INTO operation_statistics(id, datetime, sample_id, x_mean, y_mean, z_mean) VALUES ( 2, 'TEST' )"
@@ -162,7 +191,7 @@ func (d *DB) DBQuery(table, row string)  {
 func (d *DB) Insert(change string)  {
 
 
-	fmt.Println(change)
+	//fmt.Println(change)
 	//perform a db.Query insert
 	insert, err := d.Db.Query(change)
 

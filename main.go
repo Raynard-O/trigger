@@ -20,5 +20,4 @@ func main() {
 
 	db.DBQuery("pytest", "id")
 
-
 }
