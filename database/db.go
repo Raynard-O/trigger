@@ -110,13 +110,17 @@ func (d *DB) DBQuery(table, row string)  {
 			if err != nil {
 				panic(err.Error()) // proper error handling instead of panic in your app
 			}
+
+
 			if tag.SampleID == last_id {
 				num++
-				//save values for standard cal
+				//save values in array for standard cal
 				valuesX = append(valuesX, int(tag.x.Int64))
 				valuesY = append(valuesY, int(tag.y.Int64))
 				valuesZ = append(valuesZ, int(tag.z.Int64))
 
+
+				// add values for mean calc
 				changeX += int(tag.x.Int64)
 				changeY += int(tag.y.Int64)
 				changeZ += int(tag.z.Int64)
@@ -127,15 +131,21 @@ func (d *DB) DBQuery(table, row string)  {
 					num = 1
 				}
 				var difff1 int
+
+
+
 				for _, v := range valuesX {
+					//calc each v - mean
 					diff := v - changeX
-					//fmt.Printf("diff: %v,,,,,,, Value : %v,,,,,, changeX: %v \n", diff, v, changeX)
+					//square the difference
 					diff2 := diff * diff
+					//add the square
 					difff1 += diff2
-					//neWvaluesX = append(neWvaluesX, diff2)
+
 				}
 				var difff2 int
 				for _, v := range valuesY {
+					//same as abouve looop for y
 					diff := v - changeY
 					diff2 := diff * diff
 					difff2 += diff2
@@ -143,31 +153,46 @@ func (d *DB) DBQuery(table, row string)  {
 				}
 				var difff3 int
 				for _, v := range valuesZ {
+					//same as abouve looop for z
 					diff := v - changeZ
 					diff2 := diff * diff
 					difff3 += diff2
 					//neWvaluesX = append(neWvaluesZ, diff2)
 				}
 
+
+				// calc variance
 				varianceX := difff3 / num
 				varianceY := difff2 / num
 				varianceZ := difff1 / num
 
+				// get standard deviation
 				sDX := math.Sqrt(float64(varianceX))
 				sDY := math.Sqrt(float64(varianceY))
 				sDZ := math.Sqrt(float64(varianceZ))
-				//fmt.Printf("diff: %v,,,,,,, Value : %v,,,,,, changeX: %v standare : %v\n", difff3, num, varianceX,sDX)
-				//fmt.Println(varianceX, varianceY, varianceZ, sDX, sDY, sDZ)
+
+
+				//new mean
 				newX := changeX / num
 				newY := changeY / num
 				newZ := changeZ / num
 
-				//fmt.Printf("newX %v,newY %v, newZ %v,changeX : %v, changeY : %v, changeZ : %v, num : %v\n", newX, newY, newZ, changeX,changeY,changeZ,  num)
 
-				tableRow := fmt.Sprintf("INSERT INTO %v (id, sample_id, x_mean,x_stdev, x_ms_ratio, y_mean,y_stdev, y_ms_ratio, z_mean, z_stdev, z_ms_ratio ) \nVALUES (%v,%v,%v,%v,%v,%v,%v,%v,%v, %v,%v)",DBWriteTo, tag.ID, tag.SampleID, newX, sDX, varianceX, newY, sDY, varianceY, newZ, sDZ, varianceZ)
+				//ms ratio
+				msRatiox := sDX / float64(newX)
+				msRatioy := sDX / float64(newY)
+				msRatioz := sDX / float64(newZ)
+
+
+
+				// populate table
+				tableRow := fmt.Sprintf("INSERT INTO %v (id, sample_id, x_mean,x_stdev, x_ms_ratio, y_mean,y_stdev, y_ms_ratio, z_mean, z_stdev, z_ms_ratio ) \nVALUES (%v,%v,%v,%v,%v,%v,%v,%v,%v, %v,%v)",DBWriteTo, tag.ID, tag.SampleID, newX, sDX, int(msRatiox), newY, sDY, int(msRatioy), newZ, sDZ, int(msRatioz))
 
 				//tableRow2 := fmt.Sprintf("INSERT INTO pytest (processed) \nVALUES (%v)", true)
 
+
+
+				// run the table upload concurrently to speed up systems
 				var wg sync.WaitGroup
 				wg.Add(1)
 
@@ -181,14 +206,14 @@ func (d *DB) DBQuery(table, row string)  {
 				num = 0
 				changeX, changeY, changeZ = 0, 0, 0
 			}
-			//("INSERT INTO test VALUES ( 2, 'TEST' )")
+
 			last_id = tag.SampleID
 		}
 	}
-	//}
+
 }
 
-//"INSERT INTO operation_statistics(id, datetime, sample_id, x_mean, y_mean, z_mean) VALUES ( 2, 'TEST' )"
+
 //Insert
 //insert data in new database when trigger
 //takes in data change struct
@@ -207,4 +232,9 @@ func (d *DB) Insert(change string)  {
 	defer insert.Close()
 
 }
+
+
+
+
+
 
