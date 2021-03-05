@@ -61,6 +61,10 @@ type TagOld struct {
 
 }
 
+var (
+	DBWriteTo = "timitest"
+)
+
 //DBQuery
 // enter table and close value for query
 func (d *DB) DBQuery(table, row string)  {
@@ -85,7 +89,7 @@ func (d *DB) DBQuery(table, row string)  {
 	 valuesX,valuesY,valuesZ := []int{},[]int{},[]int{}
 
 
-	f := fmt.Sprintf("SELECT sample_id FROM timitest ORDER BY id DESC LIMIT 1")
+	f := fmt.Sprintf("SELECT sample_id FROM %v ORDER BY id DESC LIMIT 1", DBWriteTo)
 	var tg Tag
 	_= d.Db.QueryRow(f).Scan(&tg.SampleID)
 	fmt.Printf("the last  processed sample id: %v\n", tg.SampleID)
@@ -160,7 +164,7 @@ func (d *DB) DBQuery(table, row string)  {
 
 				//fmt.Printf("newX %v,newY %v, newZ %v,changeX : %v, changeY : %v, changeZ : %v, num : %v\n", newX, newY, newZ, changeX,changeY,changeZ,  num)
 
-				tableRow := fmt.Sprintf("INSERT INTO timitest (id, sample_id, x_mean,x_stdev, x_ms_ratio, y_mean,y_stdev, y_ms_ratio, z_mean, z_stdev, z_ms_ratio ) \nVALUES (%v,%v,%v,%v,%v,%v,%v,%v,%v, %v,%v)", tag.ID, tag.SampleID, newX, sDX, varianceX, newY, sDY, varianceY, newZ, sDZ, varianceZ)
+				tableRow := fmt.Sprintf("INSERT INTO %v (id, sample_id, x_mean,x_stdev, x_ms_ratio, y_mean,y_stdev, y_ms_ratio, z_mean, z_stdev, z_ms_ratio ) \nVALUES (%v,%v,%v,%v,%v,%v,%v,%v,%v, %v,%v)",DBWriteTo, tag.ID, tag.SampleID, newX, sDX, varianceX, newY, sDY, varianceY, newZ, sDZ, varianceZ)
 
 				//tableRow2 := fmt.Sprintf("INSERT INTO pytest (processed) \nVALUES (%v)", true)
 

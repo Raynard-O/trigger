@@ -13,11 +13,11 @@ type Tag struct {
 
 func main() {
 
-
+	DBReadFrom := "pytest"
 	db := database.InterfaceDB(database.Db())
 
 	defer db.Close()
 
-	db.DBQuery("pytest", "id")
+	db.DBQuery(DBReadFrom, "id")
 
 }
